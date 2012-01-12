@@ -67,29 +67,29 @@ degree of the filter according to the size of the set."
 
 (defun add (filter element)
   "Make FILTER include ELEMENT."
-  (check-type filter bloom-filter)
+  (declare (bloom-filter filter))
   (with-slots (order degree array seed) filter
     (let* ((hash1 (murmurhash element :seed seed))
            (hash2 (murmurhash element :seed hash1)))
       (loop for i to (1- degree)
-         for index = (fake-hash hash1 hash2 i order)
-         do (setf (sbit array index) 1)))))
+            for index = (fake-hash hash1 hash2 i order)
+            do (setf (sbit array index) 1)))))
 
 (defun memberp (filter element)
   "Return NIL if ELEMENT is definitely not present in FILTER.
 Return T if it might be present."
-  (check-type filter bloom-filter)
+  (declare (bloom-filter filter))
   (with-slots (order degree array seed) filter
     (let* ((hash1 (murmurhash element :seed seed))
            (hash2 (murmurhash element :seed hash1)))
       (loop for i to (1- degree)
-         for index = (fake-hash hash1 hash2 i order)
-         always (= 1 (sbit array index))))))
+            for index = (fake-hash hash1 hash2 i order)
+            always (= 1 (sbit array index))))))
 
 (defun make-compatible-filter (filter)
   "Return a new Bloom filter having the same order, degree, and seed
 as FILTER."
-  (check-type filter bloom-filter)
+  (declare (bloom-filter filter))
   (with-slots (order degree seed) filter
     (make-instance 'bloom-filter
                    :order order
@@ -100,8 +100,7 @@ as FILTER."
   ((filter :initarg :filter :reader filter)))
 
 (defun compatible? (filter1 filter2)
-  (check-type filter1 bloom-filter)
-  (check-type filter2 bloom-filter)
+  (declare (bloom-filter filter1 filter2))
   (and (= (filter-order filter1)
           (filter-order filter2))
        (= (filter-degree filter1)
@@ -111,6 +110,7 @@ as FILTER."
 
 (defun filter-nunion (filter1 filter2)
   "Return the union of FILTER1 and FILTER2, overwriting FILTER1."
+  (declare (bloom-filter filter1 filter2))
   (unless (compatible? filter1 filter2)
     (error 'incompatible-filter :filter filter2))
   (bit-ior (filter-array filter1) (filter-array filter2)
@@ -119,12 +119,14 @@ as FILTER."
 
 (defun copy-filter (filter)
   "Return a new Bloom filter like FILTER."
+  (declare (bloom-filter filter))
   (filter-nunion
    (make-compatible-filter filter)
    filter))
 
 (defun filter-union (filter1 filter2)
   "Return the union of FILTER1 and FILTER2 as a new filter."
+  (declare (bloom-filter filter1 filter2))
   (unless (compatible? filter1 filter2)
     (error 'incompatible-filter :filter filter2))
   (let ((filter3 (make-compatible-filter filter1)))
@@ -140,6 +142,7 @@ as FILTER."
 
 (defun filter-nintersection (filter1 filter2)
   "Return the intersection of FILTER1 and FILTER2, overwriting FILTER1."
+  (declare (bloom-filter filter1 filter2))
   (unless (compatible? filter1 filter2)
     (error 'incompatible-filter :filter filter2))
   (bit-and (filter-array filter1) (filter-array filter2)
@@ -154,6 +157,7 @@ as FILTER."
 
 (defun filter-intersection (filter1 filter2)
   "Return the intersection of FILTER1 and FILTER2 as a new filter."
+  (declare (bloom-filter filter1 filter2))
   (unless (compatible? filter1 filter2)
     (error 'incompatible-filter :filter filter2))
   (let ((filter3 (make-compatible-filter filter1)))
