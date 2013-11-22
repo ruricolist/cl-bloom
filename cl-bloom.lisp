@@ -12,7 +12,7 @@
 
 (defun opt-order (capacity)
   (ceiling (* (log (/ 1 *false-drop-rate*))
-              (log (exp 1))
+              #.(/ (expt (log 2) 2))
               capacity)))
 
 (defun make-bit-vector (size)
