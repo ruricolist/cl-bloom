@@ -15,11 +15,18 @@
               #.(/ (expt (log 2) 2))
               capacity)))
 
-(defun make-bit-vector (size)
-  (make-array size :element-type 'bit :initial-element 0))
+(defun make-bit-vector (size &key (allocation :heap))
+  (assert (member allocation '(nil :heap :static)) nil
+    (error "The `allocation` should be either :heap or :static, or it's set to :heap by default."))
+  (let ((params `(,size :element-type bit :initial-element 0)))
+    (apply (case allocation
+             ((nil :heap) 'make-array)
+             (:static 'static-vectors:make-static-vector))
+           params)))
 
 (defclass bloom-filter ()
   ((array :accessor filter-array :initarg :array :type simple-bit-vector)
+   (array-static-p :accessor filter-array-static-p :initarg :array-static-p :type symbol)
    (order :accessor filter-order :initarg :order :type integer)
    (degree :accessor filter-degree :initarg :degree :type integer)
    (seed :accessor filter-seed :initarg :seed :type integer
@@ -31,27 +38,29 @@
    :order 256
    :seed *default-seed*))
 
-(defmethod initialize-instance :after ((filter bloom-filter) &key order)
-  (setf (slot-value filter 'array) (make-bit-vector order)))
+(defmethod initialize-instance :after ((filter bloom-filter) &key order static)
+  (setf (slot-value filter 'array)
+        (make-bit-vector order :allocation (if static :static :heap))
+        (slot-value filter 'array-static-p) static))
 
 (defun bloom-filter-p (object)
   (typep object 'bloom-filter))
 
-(defun make-filter (&key (capacity 256) (false-drop-rate *false-drop-rate*))
+(defun make-filter (&key (capacity 256) (false-drop-rate *false-drop-rate*) (static nil))
   "Return a Bloom filter long enough to hold CAPACITY entries with the
 specified FALSE-DROP-RATE."
   (assert (< 0 false-drop-rate 1))
   (assert (> capacity 0))
   (let* ((*false-drop-rate* false-drop-rate)
          (order (opt-order capacity)))
-    (make-instance 'bloom-filter :order order)))
+    (make-instance 'bloom-filter :order order :static static)))
 
-(defun make-set-filter (list &key)
+(defun make-set-filter (list &key (static nil))
   "Make a Bloom filter from the elements of LIST, optimizing the order and
 degree of the filter according to the size of the set."
   (declare (list list))
   (let* ((*default-seed* (make-perfect-seed list))
-         (filter (make-filter :capacity (length list))))
+         (filter (make-filter :capacity (length list) :static static)))
     (dolist (element list)
       (add filter element))
     filter))
@@ -123,6 +132,18 @@ as FILTER."
   (filter-nunion
    (make-compatible-filter filter)
    filter))
+
+(defun destroy-filter (filter)
+  "Destroy a Bloom filter instance. When its bit array is allocated statically,
+then free the memory and set the reference of each slot to nil;
+otherwise, set all the references of slots to nil."
+  (with-slots (array array-static-p order degree seed) filter
+    (setf order nil degree nil seed nil)
+    (if array-static-p
+        (static-vectors:free-static-vector array)
+        (setf array nil))
+    (setf array nil array-static-p nil))
+  filter)
 
 (defun filter-union (filter1 filter2)
   "Return the union of FILTER1 and FILTER2 as a new filter."
