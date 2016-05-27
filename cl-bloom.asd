@@ -5,6 +5,7 @@
   :description "Simple Bloom filters with efficient hashing."
   :license "MIT"
   :serial t
-  :depends-on (#:cl-murmurhash)
+  :depends-on (#:cl-murmurhash
+               #:static-vectors)
   :components ((:file "package")
                (:file "cl-bloom")))
