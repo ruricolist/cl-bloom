@@ -150,7 +150,7 @@ otherwise, set all the references of slots to a default value by its type."
   "A 'with-' wrapper around filter, pretty useful when the array space is allocated statically."
   (let ((filter (make-filter :capacity capacity :false-drop-rate false-drop-rate :static static)))
     `(let ((,var ,filter))
-       (unwind-protect (progn ,@body)
+       (unwind-protect (progn ,@body (values))
          (destroy-filter ,var)))))
 
 (defun filter-union (filter1 filter2)
