@@ -17,16 +17,16 @@
 
 (defun make-bit-vector (size &key (allocation :heap))
   (assert (member allocation '(nil :heap :static)) nil
-    (error "The `allocation` should be either :heap or :static, or it's set to :heap by default."))
+          (error "The `allocation` should be either :heap or :static, or it's set to :heap by default."))
   (let ((params `(,size :element-type bit :initial-element 0)))
     (apply (case allocation
              ((nil :heap) 'make-array)
              (:static 'static-vectors:make-static-vector))
-           params)))
+                      params)))
 
 (defclass bloom-filter ()
   ((array :accessor filter-array :initarg :array :type simple-bit-vector)
-   (array-static-p :accessor filter-array-static-p :initarg :array-static-p :type symbol)
+   (%array-static-p% :accessor filter-array-static-p :initarg :array-static-p :type symbol)
    (order :accessor filter-order :initarg :order :type integer)
    (degree :accessor filter-degree :initarg :degree :type integer)
    (seed :accessor filter-seed :initarg :seed :type integer
@@ -41,7 +41,8 @@
 (defmethod initialize-instance :after ((filter bloom-filter) &key order static)
   (setf (slot-value filter 'array)
         (make-bit-vector order :allocation (if static :static :heap))
-        (slot-value filter 'array-static-p) static))
+        (slot-value filter '%array-static-p%)
+        static))
 
 (defun bloom-filter-p (object)
   (typep object 'bloom-filter))
@@ -135,15 +136,22 @@ as FILTER."
 
 (defun destroy-filter (filter)
   "Destroy a Bloom filter instance. When its bit array is allocated statically,
-then free the memory and set the reference of each slot to nil;
-otherwise, set all the references of slots to nil."
-  (with-slots (array array-static-p order degree seed) filter
-    (setf order nil degree nil seed nil)
-    (if array-static-p
-        (static-vectors:free-static-vector array)
-        (setf array nil))
-    (setf array nil array-static-p nil))
+then free the memory and set the reference of each slot to a default value by its type;
+otherwise, set all the references of slots to a default value by its type."
+  (with-slots (array %array-static-p% order degree seed) filter
+    (setf order -1 degree -1 seed -1)
+    (when %array-static-p%
+      (static-vectors:free-static-vector array))
+    (setf array #* %array-static-p% nil))
   filter)
+
+(defmacro with-filter
+    ((var &key (capacity 256) (false-drop-rate *false-drop-rate*) (static nil)) &body body)
+  "A 'with-' wrapper around filter, pretty useful when the array space is allocated statically."
+  (let ((filter (make-filter :capacity capacity :false-drop-rate false-drop-rate :static static)))
+    `(let ((,var ,filter))
+       (unwind-protect (progn ,@body)
+         (destroy-filter ,var)))))
 
 (defun filter-union (filter1 filter2)
   "Return the union of FILTER1 and FILTER2 as a new filter."
