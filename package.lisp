@@ -7,6 +7,8 @@
    :*false-drop-rate*
    :bloom-filter-p
    :make-filter
+   :destroy-filter
+   :with-filter
    :make-set-filter
    :add
    :memberp
