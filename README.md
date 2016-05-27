@@ -50,12 +50,12 @@ CL-USER> (bloom:with-filter (filter :capacity 10 :static t)
 
 T 
 T 
-T
+; No value
 ```
 
-When filters are used as sets, FILTER-UNION, FILTER-NUNION, FILTER-NINTERSECTION, and FILTER-INTERSECTION behave like their namesakes. FILTER-IOR and FILTER-AND are shorthands for lists of filters.
+When filters are used as sets, `FILTER-UNION`, `FILTER-NUNION`, `FILTER-NINTERSECTION`, and `FILTER-INTERSECTION` behave like their namesakes. `FILTER-IOR` and `FILTER-AND` are shorthands for lists of filters.
 
-The other utilities for composing filters are MAKE-COMPATIBLE-FILTER, which takes a filter and returns an empty, compatible filter, and COPY-FILTER, which takes a filter and returns an independent copy.
+The other utilities for composing filters are `MAKE-COMPATIBLE-FILTER`, which takes a filter and returns an empty, compatible filter, and `COPY-FILTER`, which takes a filter and returns an independent copy.
 
-The utility MAKE-SET-FILTER covers one use case for Bloom filters: given a list, it returns a filter suitable for testing membership in
+The utility `MAKE-SET-FILTER` covers one use case for Bloom filters: given a list, it returns a filter suitable for testing membership in
 that list, considered as a set.
