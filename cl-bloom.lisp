@@ -22,8 +22,7 @@
     (apply (case allocation
              ((nil :heap) 'make-array)
              (:static
-              (if #+cl-bloom-sv t
-                  'static-vectors:make-static-vector
+              (or #+cl-bloom-sv 'static-vectors:make-static-vector
                   'make-array)))
            params)))
 
