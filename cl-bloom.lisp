@@ -21,8 +21,11 @@
   (let ((params `(,size :element-type bit :initial-element 0)))
     (apply (case allocation
              ((nil :heap) 'make-array)
-             (:static 'static-vectors:make-static-vector))
-                      params)))
+             (:static
+              (if #+cl-bloom-sv t
+                  'static-vectors:make-static-vector
+                  'make-array)))
+           params)))
 
 (defclass bloom-filter ()
   ((array :accessor filter-array :initarg :array :type simple-bit-vector)
@@ -140,9 +143,11 @@ then free the memory and set the reference of each slot to a default value by it
 otherwise, set all the references of slots to a default value by its type."
   (with-slots (array %array-static-p% order degree seed) filter
     (setf order -1 degree -1 seed -1)
-    (when %array-static-p%
-      (static-vectors:free-static-vector array))
-    (setf array #* %array-static-p% nil))
+    #+cl-bloom-sv
+    (progn
+      (when %array-static-p%
+        (static-vectors:free-static-vector array))
+      (setf array #* %array-static-p% nil)))
   filter)
 
 (defmacro with-filter
