@@ -70,7 +70,7 @@ degree of the filter according to the size of the set."
 
 ;; Cf. Kirsch and Mitzenmacher, "Less Hashing, Same
 ;; Performance: Building a Better Bloom Filter".
-;; <http://www.eecs.harvard.edu/~kirsch/pubs/bbbf/esa06.pdf>
+;; <https://www.eecs.harvard.edu/~michaelm/postscripts/tr-02-05.pdf>
 
 (declaim (inline fake-hash))
 
